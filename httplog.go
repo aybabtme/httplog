@@ -18,7 +18,7 @@ var (
 func main() {
 	flag.StringVar(&addr, "addr", ":8080", "address on which to listen")
 	flag.StringVar(&location, "Hlocation", "", "Location field of the header")
-	flag.StringVar(&cors, "HCrossOrigin", "*", "Location field of the header")
+	flag.StringVar(&cors, "HCrossOrigin", "*", "CrossOrigin field of the header")
 	flag.Parse()
 
 	http.HandleFunc("/", logAll)
@@ -51,7 +51,7 @@ func logAll(rw http.ResponseWriter, req *http.Request) {
 	if location != "" {
 		rw.Header().Set("Location", location)
 	}
-	if location != "" {
+	if cors != "" {
 		rw.Header().Set("Access-Control-Allow-Origin", cors)
 	}
 	rw.WriteHeader(http.StatusOK)
