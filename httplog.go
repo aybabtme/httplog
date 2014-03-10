@@ -12,13 +12,17 @@ var (
 	addr     string
 	location string
 	cors     string
+	maxLen   int
+	body     string
 	known    = make(map[string]int)
 )
 
 func main() {
 	flag.StringVar(&addr, "addr", ":8080", "address on which to listen")
-	flag.StringVar(&location, "Hlocation", "", "Location field of the header")
+	flag.StringVar(&location, "HLocation", "", "Location field of the header")
 	flag.StringVar(&cors, "HCrossOrigin", "*", "CrossOrigin field of the header")
+	flag.IntVar(&maxLen, "MaxLen", 140, "Max length of printed strings")
+	flag.StringVar(&body, "body", "", "Body to put in response")
 	flag.Parse()
 
 	http.HandleFunc("/", logAll)
@@ -34,7 +38,7 @@ func logAll(rw http.ResponseWriter, req *http.Request) {
 		}
 
 		dataStr := string(data)
-		maxIdx := min(len(dataStr)-1, 140)
+		maxIdx := min(len(dataStr)-1, maxLen)
 		summary = dataStr[:maxIdx]
 	}
 
@@ -45,7 +49,7 @@ func logAll(rw http.ResponseWriter, req *http.Request) {
 		known[entry] = 0
 	} else {
 		known[entry] = c + 1
-		log.Printf("%d times : `%s...`", c+1, entry[:min(len(entry)-1, 30)])
+		log.Printf("%d times : `%s...`", c+1, entry[:min(len(entry)-1, maxLen)])
 	}
 
 	if location != "" {
@@ -55,6 +59,7 @@ func logAll(rw http.ResponseWriter, req *http.Request) {
 		rw.Header().Set("Access-Control-Allow-Origin", cors)
 	}
 	rw.WriteHeader(http.StatusOK)
+	fmt.Fprint(rw, body)
 }
 
 func min(n, m int) int {
