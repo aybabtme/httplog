@@ -6,23 +6,24 @@ import (
 	"io/ioutil"
 	"log"
 	"net/http"
+	"strings"
 )
 
 var (
-	addr     string
-	location string
-	cors     string
-	maxLen   int
-	body     string
-	known    = make(map[string]int)
+	addr    string
+	maxLen  int
+	headers = make(HeaderValue)
+	body    string
+	known   = make(map[string]int)
 )
 
 func main() {
 	flag.StringVar(&addr, "addr", ":8080", "address on which to listen")
-	flag.StringVar(&location, "HLocation", "", "Location field of the header")
-	flag.StringVar(&cors, "HCrossOrigin", "*", "CrossOrigin field of the header")
+
+	flag.Var(headers, "H", "comma separated list of a header key, followed by values. Invoke many times")
 	flag.IntVar(&maxLen, "MaxLen", 140, "Max length of printed strings")
-	flag.StringVar(&body, "body", "", "Body to put in response")
+	flag.StringVar(&body, "Body", "", "Body to put in response")
+
 	flag.Parse()
 
 	http.HandleFunc("/", logAll)
@@ -52,14 +53,29 @@ func logAll(rw http.ResponseWriter, req *http.Request) {
 		log.Printf("%d times : `%s...`", c+1, entry[:min(len(entry)-1, maxLen)])
 	}
 
-	if location != "" {
-		rw.Header().Set("Location", location)
+	for headKey, headVal := range headers {
+		rw.Header()[headKey] = headVal
 	}
-	if cors != "" {
-		rw.Header().Set("Access-Control-Allow-Origin", cors)
-	}
+
 	rw.WriteHeader(http.StatusOK)
 	fmt.Fprint(rw, body)
+}
+
+type HeaderValue map[string][]string
+
+func (h HeaderValue) String() string {
+	return "\"key, val1, val2, ..., valn\""
+}
+
+func (h HeaderValue) Set(s string) error {
+	vals := strings.Split(s, ",")
+	key := vals[0]
+	vals = vals[1:]
+	for i, each := range vals {
+		vals[i] = strings.TrimSpace(each)
+	}
+	h[key] = vals
+	return nil
 }
 
 func min(n, m int) int {
